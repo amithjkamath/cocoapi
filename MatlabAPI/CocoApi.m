@@ -256,12 +256,25 @@ classdef CocoApi
                 k=a.keypoints; x=k(1:3:end)+1; y=k(2:3:end)+1; v=k(3:3:end);
                 k=coco.loadCats(a.category_id); k=k.skeleton; c=cs(i,:); hold on
                 p={'FaceAlpha',.25,'LineWidth',2,'EdgeColor',c}; % polygon
-                for j=seg 
-                    xy=j{1}+.5; 
-                    fill(xy(1:2:end),xy(2:2:end),c,p{:});
+                for j=seg
+                    if iscell(j)
+                        xy = j{1} +.5;
+                        fill(xy(1:2:end),xy(2:2:end),c,p{:});
+                    elseif isscalar(j)
+                        xy = j + .5; 
+                        fill(xy,xy,c,p{:});
+                    else 
+                        xy = j + .5; 
+                        fill(xy(1:2:end),xy(2:2:end),c,p{:});                         
+                    end
                 end
                 p={'Color',c,'LineWidth',3}; % skeleton
-                for j=k, s = j{1};
+                for j=k
+                    if iscell(j)
+                        s = j{1};
+                    else
+                        s = j;
+                    end
                     if(all(v(s)>0))
                         line(x(s),y(s),p{:});
                     end

@@ -4,7 +4,7 @@ dataRoot = "C:\Users\akamath\Documents\data\COCO\";
 %% initialize COCO api (please specify dataType/annType below)
 annTypes = ["instances", "captions", "person_keypoints"];
 dataType= "val2017"; 
-annType=annTypes(1); % choose annotation type.
+annType=annTypes(3); % choose annotation type.
 fName = annType + "_" + dataType + ".json";
 annFile= fullfile(dataRoot, "annotations", fName);
 coco=CocoApi(annFile);
@@ -19,7 +19,7 @@ if( ~strcmp(annType,'captions') )
 end
 
 %% get all images containing given categories, select one at random
-catIds = coco.getCatIds('catNms',{'bicyle','boat','sports'});
+catIds = coco.getCatIds('catNms',{'person','boat','sports'});
 imgIds = coco.getImgIds('catIds',catIds);
 imgId = imgIds(randi(length(imgIds)));
 
