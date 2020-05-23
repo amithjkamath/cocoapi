@@ -28,10 +28,10 @@ anns = cocoDt.loadAnns(annIds); cocoDt.showAnns(anns);
 
 %% load raw JSON and show exact format for results
 fprintf('results structure have the following format:\n');
-res = gason(fileread(resFile)); disp(res)
+res = jsondecode(fileread(resFile)); disp(res)
 
 %% the following command can be used to save the results back to disk
-if(0), f=fopen(resFile,'w'); fwrite(f,gason(res)); fclose(f); end
+if(0), f=fopen(resFile,'w'); fwrite(f,jsonencode(res)); fclose(f); end
 
 %% run COCO evaluation code (see CocoEval.m)
 cocoEval=CocoEval(cocoGt,cocoDt,type);

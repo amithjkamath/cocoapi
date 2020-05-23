@@ -12,7 +12,7 @@ classdef CocoApi
   %
   % An alternative to using the API is to load the annotations directly
   % into a Matlab struct. This can be achieved via:
-  %  data = gason(fileread(annFile));
+  %  data = jsondecode(fileread(annFile));
   % Using the API provides additional utility functions. Note that this API
   % supports both *instance* and *caption* annotations. In the case of
   % captions not all functions are defined (e.g. categories are undefined).
@@ -57,8 +57,8 @@ classdef CocoApi
       % OUTPUTS
       %  coco      - initialized coco object
       fprintf('Loading and preparing annotations... '); clk=clock;
-      if(isstruct(annFile)), coco.data=annFile; else
-        coco.data=gason(fileread(annFile)); end
+      if(isstruct(annFile)), coco.data = annFile; else
+        coco.data = jsondecode(fileread(annFile)); end
       is.imgIds = [coco.data.images.id]';
       is.imgIdsMap = makeMap(is.imgIds);
       if( isfield(coco.data,'annotations') )
@@ -225,54 +225,92 @@ classdef CocoApi
     end
     
     function hs = showAnns( coco, anns )
-      % Display the specified annotations.
-      %
-      % USAGE
-      %  hs = coco.showAnns( anns )
-      %
-      % INPUTS
-      %  anns       - annotations to display
-      %
-      % OUTPUTS
-      %  hs         - handles to segment graphic objects
-      n=length(anns); if(n==0), return; end
-      r=.4:.2:1; [r,g,b]=ndgrid(r,r,r); cs=[r(:) g(:) b(:)];
-      cs=cs(randperm(size(cs,1)),:); cs=repmat(cs,100,1);
-      if( isfield( anns,'keypoints') )
-        for i=1:n
-          a=anns(i); if(isfield(a,'iscrowd') && a.iscrowd), continue; end
-          seg={}; if(isfield(a,'segmentation')), seg=a.segmentation; end
-          k=a.keypoints; x=k(1:3:end)+1; y=k(2:3:end)+1; v=k(3:3:end);
-          k=coco.loadCats(a.category_id); k=k.skeleton; c=cs(i,:); hold on
-          p={'FaceAlpha',.25,'LineWidth',2,'EdgeColor',c}; % polygon
-          for j=seg, xy=j{1}+.5; fill(xy(1:2:end),xy(2:2:end),c,p{:}); end
-          p={'Color',c,'LineWidth',3}; % skeleton
-          for j=k, s=j{1}; if(all(v(s)>0)), line(x(s),y(s),p{:}); end; end
-          p={'MarkerSize',8,'MarkerFaceColor',c,'MarkerEdgeColor'}; % pnts
-          plot(x(v>0),y(v>0),'o',p{:},'k');
-          plot(x(v>1),y(v>1),'o',p{:},c); hold off;
+        % Display the specified annotations.
+        %
+        % USAGE
+        %  hs = coco.showAnns( anns )
+        %
+        % INPUTS
+        %  anns       - annotations to display
+        %
+        % OUTPUTS
+        %  hs         - handles to segment graphic objects
+        n=length(anns);
+        if(n==0)
+            return
         end
-      elseif( any(isfield(anns,{'segmentation','bbox'})) )
-        if(~isfield(anns,'iscrowd')), [anns(:).iscrowd]=deal(0); end
-        if(~isfield(anns,'segmentation')), S={anns.bbox}; %#ok<ALIGN>
-          for i=1:n, x=S{i}(1); w=S{i}(3); y=S{i}(2); h=S{i}(4);
-            anns(i).segmentation={[x,y,x,y+h,x+w,y+h,x+w,y]}; end; end
-        S={anns.segmentation}; hs=zeros(10000,1); k=0; hold on;
-        pFill={'FaceAlpha',.4,'LineWidth',3};
-        for i=1:n
-          if(anns(i).iscrowd), C=[.01 .65 .40]; else C=rand(1,3); end
-          if(isstruct(S{i})), M=double(MaskApi.decode(S{i})); k=k+1;
-            hs(k)=imagesc(cat(3,M*C(1),M*C(2),M*C(3)),'Alphadata',M*.5);
-          else for j=1:length(S{i}), P=S{i}{j}+.5; k=k+1;
-              hs(k)=fill(P(1:2:end),P(2:2:end),C,pFill{:}); end
-          end
+        
+        r=.4:.2:1; [r,g,b]=ndgrid(r,r,r); cs=[r(:) g(:) b(:)];
+        cs=cs(randperm(size(cs,1)),:); cs=repmat(cs,100,1);
+        
+        if( isfield( anns,'keypoints') )
+            for i=1:n
+                a=anns(i); 
+                if(isfield(a,'iscrowd') && a.iscrowd)
+                    continue; 
+                end
+                seg={}; 
+                if(isfield(a,'segmentation'))
+                    seg=a.segmentation; 
+                end
+                k=a.keypoints; x=k(1:3:end)+1; y=k(2:3:end)+1; v=k(3:3:end);
+                k=coco.loadCats(a.category_id); k=k.skeleton; c=cs(i,:); hold on
+                p={'FaceAlpha',.25,'LineWidth',2,'EdgeColor',c}; % polygon
+                for j=seg 
+                    xy=j{1}+.5; 
+                    fill(xy(1:2:end),xy(2:2:end),c,p{:});
+                end
+                p={'Color',c,'LineWidth',3}; % skeleton
+                for j=k, s = j{1};
+                    if(all(v(s)>0))
+                        line(x(s),y(s),p{:});
+                    end
+                end
+                p={'MarkerSize',8,'MarkerFaceColor',c,'MarkerEdgeColor'}; % pnts
+                plot(x(v>0),y(v>0),'o',p{:},'k');
+                plot(x(v>1),y(v>1),'o',p{:},c); hold off;
+            end
+        elseif( any(isfield(anns,{'segmentation','bbox'})) )
+            if(~isfield(anns,'iscrowd'))
+                [anns(:).iscrowd]=deal(0); 
+            end
+            if(~isfield(anns,'segmentation'))
+                S={anns.bbox};
+                for i=1:n, x=S{i}(1); w=S{i}(3); y=S{i}(2); h=S{i}(4);
+                    anns(i).segmentation={[x,y,x,y+h,x+w,y+h,x+w,y]}; 
+                end
+            end
+            S={anns.segmentation}; hs=zeros(10000,1); k=0; hold on;
+            pFill={'FaceAlpha',.4,'LineWidth',3};
+            for i=1:n
+                if (anns(i).iscrowd)
+                    C=[.01 .65 .40];
+                else
+                    C=rand(1,3);
+                end
+                if (isstruct(S{i}))
+                    M=double(MaskApi.decode(S{i})); k=k+1;
+                    hs(k) = imagesc(cat(3,M*C(1),M*C(2),M*C(3)),'Alphadata',M*.5);
+                else
+                    if (iscell(S{i}))
+                        for j = 1:length(S{i})
+                            P=S{i}{j}+.5; k=k+1;
+                            hs(k)=fill(P(1:2:end),P(2:2:end),C,pFill{:});                            
+                        end
+                    else 
+                        P=S{i}+.5; k=k+1;
+                        hs(k)=fill(P(1:2:end),P(2:2:end),C,pFill{:});
+                    end
+                end
+            end
+            hs = hs(1:k); hold off;
+        elseif( isfield(anns,'caption') )
+            S={anns.caption};
+            for i=1:n
+                S{i}=[int2str(i) ') ' S{i} '\newline'];
+            end
+            S=[S{:}]; title(S,'FontSize',12);
         end
-        hs=hs(1:k); hold off;
-      elseif( isfield(anns,'caption') )
-        S={anns.caption};
-        for i=1:n, S{i}=[int2str(i) ') ' S{i} '\newline']; end
-        S=[S{:}]; title(S,'FontSize',12);
-      end
     end
     
     function cocoRes = loadRes( coco, resFile )
@@ -291,7 +329,7 @@ classdef CocoApi
       % OUTPUTS
       %  cocoRes    - initialized results API
       fprintf('Loading and preparing results...     '); clk=clock;
-      cdata=coco.data; R=gason(fileread(resFile)); m=length(R);
+      cdata=coco.data; R=jsondecode(fileread(resFile)); m=length(R);
       valid=ismember([R.image_id],[cdata.images.id]);
       if(~all(valid)), error('Results provided for invalid images.'); end
       t={'segmentation','bbox','keypoints','caption'}; t=t{isfield(R,t)};

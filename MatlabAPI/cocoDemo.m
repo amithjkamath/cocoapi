@@ -1,9 +1,12 @@
 %% Demo for the CocoApi (see CocoApi.m)
+dataRoot = "C:\Users\akamath\Documents\data\COCO\";
 
 %% initialize COCO api (please specify dataType/annType below)
-annTypes = { 'instances', 'captions', 'person_keypoints' };
-dataType='val2014'; annType=annTypes{1}; % specify dataType/annType
-annFile=sprintf('../annotations/%s_%s.json',annType,dataType);
+annTypes = ["instances", "captions", "person_keypoints"];
+dataType= "val2017"; 
+annType=annTypes(1); % choose annotation type.
+fName = annType + "_" + dataType + ".json";
+annFile= fullfile(dataRoot, "annotations", fName);
 coco=CocoApi(annFile);
 
 %% display COCO categories and supercategories
@@ -16,13 +19,13 @@ if( ~strcmp(annType,'captions') )
 end
 
 %% get all images containing given categories, select one at random
-catIds = coco.getCatIds('catNms',{'person','dog','skateboard'});
+catIds = coco.getCatIds('catNms',{'bicyle','boat','sports'});
 imgIds = coco.getImgIds('catIds',catIds);
 imgId = imgIds(randi(length(imgIds)));
 
 %% load and display image
 img = coco.loadImgs(imgId);
-I = imread(sprintf('../images/%s/%s',dataType,img.file_name));
+I = imread(fullfile(dataRoot, dataType, string(img.file_name)));
 figure(1); imagesc(I); axis('image'); set(gca,'XTick',[],'YTick',[])
 
 %% load and display annotations
